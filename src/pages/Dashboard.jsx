@@ -812,38 +812,258 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent className="px-3 pb-3 pt-1">
-              {hasProjection && (() => {
-                const retirementAge = retirementSettings?.retirement_age ?? 65;
+              {hasProjection ? (() => {
+                const histData = chartData.filter(d => !d.isProjection && !d.isToday);
+                const projData = chartData.filter(d => d.isProjection || d.isToday);
+                const retAge = retirementSettings?.retirement_age ?? 65;
                 const retirePoint = chartData.find(d => d.isRetirementAge);
                 const haveVal = retirePoint?.projected ?? 0;
                 const needVal = retirePoint?.needed ?? 0;
                 const onTrack = haveVal >= needVal;
-                const fmt = v => v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v/1_000).toFixed(0)}K` : `$${Math.round(v)}`;
+                const fmtV = v => v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v/1_000).toFixed(0)}K` : `$${Math.round(v)}`;
+                const yFmt = v => v >= 1000 || v <= -1000 ? `$${(v/1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : `$${v}`;
+                const yDomain = [chartYTicks[0], chartYTicks[chartYTicks.length - 1]];
+                const histTicks = (() => {
+                  const seen = new Set();
+                  return histData
+                    .filter(d => {
+                      if (!d.fullDate) return false;
+                      const key = `${d.fullDate.getFullYear()}-${d.fullDate.getMonth()}`;
+                      if (seen.has(key)) return false;
+                      seen.add(key);
+                      return true;
+                    })
+                    .map(d => d.date);
+                })();
+                const projTicks = projData.map(d => d.date);
+
+                const tooltipContent = ({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0]?.payload;
+                  if (!d) return null;
+                  if (d.isProjection) {
+                    const fmt = v => v != null ? `$${Math.round(v).toLocaleString()}` : '—';
+                    return (
+                      <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-lg text-sm">
+                        <div className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Projected · {d.date}</div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="text-slate-500 text-xs">You'll have</span>
+                          <span className="font-semibold text-emerald-600 ml-auto">{fmt(d.projected)}</span>
+                        </div>
+                        {d.needed != null && (
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-slate-400" />
+                            <span className="text-slate-500 text-xs">You'll need</span>
+                            <span className="font-semibold text-slate-700 ml-auto">{fmt(d.needed)}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                  const dateLabel = d.fullDate ? format(d.fullDate, 'MMM d, yyyy') : d.date;
+                  const nw = d.networth ?? 0;
+                  return (
+                    <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-lg text-sm">
+                      <div className="text-xs text-slate-500 mb-1">{dateLabel}</div>
+                      <div className={`text-lg font-semibold ${nw >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {nw < 0 ? '-' : ''}${Math.abs(nw).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                      </div>
+                    </div>
+                  );
+                };
+
                 return (
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#10b981" strokeWidth="2.5" strokeDasharray="8 4"/></svg>
-                      <span className="text-xs text-slate-500">You'll have</span>
-                      <span className={`text-xs font-bold ${onTrack ? 'text-emerald-600' : 'text-slate-700'}`}>{fmt(haveVal)} at {retirementAge}</span>
+                  <div>
+                    {/* Legend */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1 pb-2">
+                      <div className="flex items-center gap-1.5">
+                        <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#10b981" strokeWidth="2.5" strokeDasharray="8 4"/></svg>
+                        <span className="text-xs text-slate-500">You'll have</span>
+                        <span className={`text-xs font-bold ${onTrack ? 'text-emerald-600' : 'text-slate-700'}`}>{fmtV(haveVal)} at {retAge}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4"/></svg>
+                        <span className="text-xs text-slate-500">You'll need</span>
+                        <span className={`text-xs font-bold ${!onTrack ? 'text-red-500' : 'text-slate-700'}`}>{fmtV(needVal)}</span>
+                      </div>
+                      <span className={`text-[11px] ml-auto px-2 py-0.5 rounded-full font-medium ${onTrack ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                        {onTrack ? 'On track' : 'Shortfall'}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4"/></svg>
-                      <span className="text-xs text-slate-500">You'll need</span>
-                      <span className={`text-xs font-bold ${!onTrack ? 'text-red-500' : 'text-slate-700'}`}>{fmt(needVal)}</span>
+                    {/* Dual chart */}
+                    <div className="flex" style={{ height: 270 }}>
+                      {/* History panel */}
+                      <div style={{ flex: '0 0 55%' }}>
+                        <ResponsiveContainer width="100%" height={270}>
+                          <AreaChart data={histData} margin={{ top: 10, right: 0, left: 0, bottom: 30 }}>
+                            <defs>
+                              <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                            <XAxis
+                              dataKey="date"
+                              stroke="#64748b"
+                              tick={{ fontSize: 11 }}
+                              axisLine={false}
+                              tickLine={false}
+                              ticks={histTicks}
+                              interval={0}
+                              tickFormatter={val => {
+                                const d = histData.find(x => x.date === val);
+                                return d?.fullDate ? format(d.fullDate, 'MMM') : val;
+                              }}
+                            />
+                            <YAxis
+                              stroke="#64748b"
+                              tick={{ fontSize: 11 }}
+                              width={50}
+                              ticks={chartYTicks}
+                              domain={yDomain}
+                              tickFormatter={yFmt}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <Tooltip
+                              position={{ y: 0 }}
+                              offset={20}
+                              cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
+                              wrapperStyle={{ pointerEvents: 'none' }}
+                              content={tooltipContent}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="networth"
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              fillOpacity={1}
+                              fill="url(#histGrad)"
+                              connectNulls={false}
+                              dot={false}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                      {/* Today divider */}
+                      <div className="relative flex flex-col items-center shrink-0" style={{ width: 1, marginBottom: 30, marginTop: 10 }}>
+                        <div className="absolute inset-0" style={{ borderLeft: '2px dashed #cbd5e1' }} />
+                        <div className="absolute bottom-0 translate-y-full pt-1 text-[10px] font-medium text-slate-500 whitespace-nowrap" style={{ transform: 'translateX(-50%) translateY(6px)' }}>
+                          Today
+                        </div>
+                      </div>
+                      {/* Projection panel */}
+                      <div style={{ flex: '0 0 45%' }} className="relative">
+                        <ResponsiveContainer width="100%" height={270}>
+                          <AreaChart data={projData} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                            <defs>
+                              <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                            <XAxis
+                              dataKey="date"
+                              stroke="#64748b"
+                              tick={{ fontSize: 11 }}
+                              axisLine={false}
+                              tickLine={false}
+                              ticks={projTicks.filter(t => t !== 'Today')}
+                              interval={0}
+                            />
+                            <YAxis
+                              stroke="#64748b"
+                              tick={{ fontSize: 11 }}
+                              width={0}
+                              ticks={chartYTicks}
+                              domain={yDomain}
+                              tickFormatter={() => ''}
+                              axisLine={false}
+                              tickLine={false}
+                              orientation="right"
+                            />
+                            <ReferenceLine
+                              x={`Retire ${retAge}`}
+                              stroke="#10b981"
+                              strokeDasharray="4 3"
+                              strokeWidth={1.5}
+                            />
+                            <Customized component={({ xAxisMap }) => {
+                              const xAxis = xAxisMap && Object.values(xAxisMap)[0];
+                              if (!xAxis?.scale) return null;
+                              const bw = xAxis.scale.bandwidth ? xAxis.scale.bandwidth() / 2 : 0;
+                              const retLabel = `Retire ${retAge}`;
+                              const xPos = xAxis.scale(retLabel);
+                              if (xPos == null) return null;
+                              const cx = xPos + bw;
+                              const active = !!retirementSettings;
+                              const color = active ? '#10b981' : '#94a3b8';
+                              const borderColor = active ? '#10b981' : '#cbd5e1';
+                              const bg = active ? '#f0fdf4' : '#f8fafc';
+                              return (
+                                <g
+                                  transform={`translate(${cx}, 18)`}
+                                  onClick={() => setRetirementModalOpen(true)}
+                                  style={{ cursor: 'pointer' }}
+                                  role="button"
+                                  aria-label="Retirement projection settings"
+                                >
+                                  <circle r={15} fill={bg} stroke={borderColor} strokeWidth={1.5} />
+                                  <g transform="translate(-9,-9)" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                                    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/>
+                                    <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+                                  </g>
+                                </g>
+                              );
+                            }} />
+                            <Tooltip
+                              position={{ y: 0 }}
+                              offset={20}
+                              cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
+                              wrapperStyle={{ pointerEvents: 'none' }}
+                              content={tooltipContent}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="projected"
+                              stroke="#10b981"
+                              strokeWidth={2.5}
+                              strokeDasharray="8 4"
+                              fillOpacity={1}
+                              fill="url(#projGrad)"
+                              connectNulls={true}
+                              dot={false}
+                              activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="needed"
+                              stroke="#94a3b8"
+                              strokeWidth={1.5}
+                              strokeDasharray="5 4"
+                              fill="none"
+                              fillOpacity={0}
+                              connectNulls={true}
+                              dot={false}
+                              activeDot={{ r: 4, fill: '#94a3b8', stroke: '#fff', strokeWidth: 2 }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
-                    <span className={`text-[11px] ml-auto px-2 py-0.5 rounded-full font-medium ${onTrack ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                      {onTrack ? 'On track' : 'Shortfall'}
-                    </span>
                   </div>
                 );
-              })()}
+              })() : (
               <ResponsiveContainer width="100%" height={270}>
                 {chartView === 'income' ? (
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: 30, bottom: 5 }} barGap={0} barCategoryGap="60%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} width={45} tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`} orientation="right" axisLine={false} tickLine={false} />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: '8px', border: '1px solid #e2e8f0' }}
                       formatter={(value) => `$${value.toFixed(2)}`}
                       itemSorter={(item) => item.dataKey === 'income' ? -1 : 1}
@@ -861,10 +1081,6 @@ export default function Dashboard() {
                         <stop offset="5%" stopColor={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'} stopOpacity={0.3}/>
                         <stop offset="95%" stopColor={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'} stopOpacity={0}/>
                       </linearGradient>
-                      <linearGradient id="projectedGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis
@@ -874,7 +1090,7 @@ export default function Dashboard() {
                       axisLine={false}
                       tickLine={false}
                       ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartXTicks.map(t => t.date) : undefined}
-                      interval={hasProjection ? 0 : 'preserveStartEnd'}
+                      interval='preserveStartEnd'
                       tickFormatter={(val) => {
                         const found = chartXTicks.find(t => t.date === val);
                         return found ? found.label : val;
@@ -891,56 +1107,31 @@ export default function Dashboard() {
                       axisLine={false}
                       tickLine={false}
                     />
-                    {hasProjection && (
-                      <ReferenceLine x="Today" stroke="#cbd5e1" strokeDasharray="4 3" strokeWidth={1} />
-                    )}
-                    {hasProjection && retirementSettings?.retirement_age && (() => {
-                      const label = `Retire ${retirementSettings.retirement_age}`;
-                      return (
-                        <ReferenceLine x={label} stroke="#10b981" strokeDasharray="4 3" strokeWidth={1.5}
-                          label={{ value: `Retire`, position: 'insideTopLeft', fontSize: 10, fill: '#10b981' }}
-                        />
-                      );
-                    })()}
                     {chartView === 'networth' && (
                       <Customized component={({ xAxisMap }) => {
                         const xAxis = xAxisMap && Object.values(xAxisMap)[0];
                         if (!xAxis?.scale) return null;
                         const bw = xAxis.scale.bandwidth ? xAxis.scale.bandwidth() / 2 : 0;
-
-                        // For projection mode: place icon at Today divider
-                        // For no-projection mode: place at far right end of chart
-                        let xPos;
-                        if (hasProjection) {
-                          const todayPoint = chartData.find(d => d.isToday);
-                          if (!todayPoint) return null;
-                          xPos = xAxis.scale(todayPoint.date);
-                        } else {
-                          const lastPoint = chartData[chartData.length - 1];
-                          if (!lastPoint) return null;
-                          xPos = xAxis.scale(lastPoint.date);
-                        }
+                        const lastPoint = chartData[chartData.length - 1];
+                        if (!lastPoint) return null;
+                        const xPos = xAxis.scale(lastPoint.date);
                         if (xPos == null) return null;
-                        xPos = xPos + bw;
-
                         const active = !!retirementSettings;
                         const color = active ? '#10b981' : '#94a3b8';
                         const borderColor = active ? '#10b981' : '#cbd5e1';
                         const bg = active ? '#f0fdf4' : '#f8fafc';
-
                         return (
                           <g
-                            transform={`translate(${hasProjection ? xPos : xPos - 18}, 16)`}
+                            transform={`translate(${xPos + bw - 18}, 16)`}
                             onClick={() => setRetirementModalOpen(true)}
                             style={{ cursor: 'pointer' }}
                             role="button"
                             aria-label="Retirement projection settings"
                           >
                             <circle r={15} fill={bg} stroke={borderColor} strokeWidth={1.5} />
-                            {/* Lucide Sparkles icon paths scaled to 18x18 centered */}
-                            <g transform="translate(-9,-9)" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
-                              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z" strokeWidth="1.5"/>
-                              <path d="M20 3v4M22 5h-4M4 17v2M5 18H3" strokeWidth="1.5"/>
+                            <g transform="translate(-9,-9)" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/>
+                              <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
                             </g>
                           </g>
                         );
@@ -974,26 +1165,6 @@ export default function Dashboard() {
                         }
 
                         if (chartView === 'networth') {
-                          if (data.isProjection) {
-                            const fmt = v => v != null ? `$${Math.round(v).toLocaleString()}` : '—';
-                            return (
-                              <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-lg text-sm">
-                                <div className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Projected · {data.date}</div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                                  <span className="text-slate-500 text-xs">You'll have</span>
-                                  <span className="font-semibold text-emerald-600 ml-auto">{fmt(data.projected)}</span>
-                                </div>
-                                {data.needed != null && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-slate-400" />
-                                    <span className="text-slate-500 text-xs">You'll need</span>
-                                    <span className="font-semibold text-slate-700 ml-auto">{fmt(data.needed)}</span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
                           const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d, yyyy') : data.date;
                           const nw = data.networth ?? 0;
                           return (
@@ -1016,7 +1187,6 @@ export default function Dashboard() {
                           );
                         }
 
-                        // Default for income view
                         return (
                           <div className="bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg text-xs">
                             <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{data.date}</div>
@@ -1061,39 +1231,10 @@ export default function Dashboard() {
                         );
                       }}
                     />
-                    {hasProjection && (
-                      <Area
-                        type="monotone"
-                        dataKey="projected"
-                        stroke="#10b981"
-                        strokeWidth={2.5}
-                        strokeDasharray="8 4"
-                        fillOpacity={1}
-                        fill="url(#projectedGradient)"
-                        connectNulls={false}
-                        dot={false}
-                        activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
-                        legendType="none"
-                      />
-                    )}
-                    {hasProjection && (
-                      <Area
-                        type="monotone"
-                        dataKey="needed"
-                        stroke="#94a3b8"
-                        strokeWidth={1.5}
-                        strokeDasharray="5 4"
-                        fill="none"
-                        fillOpacity={0}
-                        connectNulls={false}
-                        dot={false}
-                        activeDot={{ r: 4, fill: '#94a3b8', stroke: '#fff', strokeWidth: 2 }}
-                        legendType="none"
-                      />
-                    )}
                   </AreaChart>
                 )}
               </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
