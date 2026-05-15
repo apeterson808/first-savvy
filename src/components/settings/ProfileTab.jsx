@@ -17,6 +17,7 @@ export default function ProfileTab() {
     last_name: '',
     display_name: '',
     phone: '',
+    date_of_birth: '',
     bio: '',
     avatar_url: ''
   });
@@ -61,6 +62,7 @@ export default function ProfileTab() {
             last_name: profile.last_name || '',
             display_name: profile.display_name || '',
             phone: profile.phone || '',
+            date_of_birth: profile.date_of_birth || '',
             bio: profile.bio || '',
             avatar_url: profile.avatar_url || ''
           });
@@ -329,6 +331,24 @@ export default function ProfileTab() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="dateOfBirth">
+              Date of Birth {!formData.date_of_birth && <span className="text-amber-500 text-xs ml-1">(required for financial projections)</span>}
+            </Label>
+            <Input
+              id="dateOfBirth"
+              type="date"
+              value={formData.date_of_birth}
+              onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+              disabled={isLoading}
+              max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+              className="max-w-xs"
+            />
+            <p className="text-xs text-slate-500">
+              Used to calculate age milestones on your net worth projection chart.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="bio">Bio</Label>
             <Textarea
               id="bio"
@@ -363,40 +383,6 @@ export default function ProfileTab() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Additional Information</CardTitle>
-          <CardDescription>
-            Help us personalize your experience (coming soon)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-50">
-            <div className="space-y-2">
-              <Label>Date of Birth</Label>
-              <Input type="date" disabled placeholder="MM/DD/YYYY" />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Occupation</Label>
-              <Input disabled placeholder="e.g., Software Engineer" />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Annual Income Range</Label>
-              <Input disabled placeholder="e.g., $50,000 - $75,000" />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Primary Financial Goal</Label>
-              <Input disabled placeholder="e.g., Save for retirement" />
-            </div>
-          </div>
-          <p className="text-sm text-slate-500">
-            These fields will be available in a future update to help with financial planning and budgeting recommendations.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

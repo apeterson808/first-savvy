@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AccountDropdown from '../components/common/AccountDropdown';
@@ -21,8 +21,10 @@ import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import ChildDashboard from '../components/dashboard/ChildDashboard';
 import ParentViewOfChildDashboard from '../components/dashboard/ParentViewOfChildDashboard';
+import RetirementSettingsModal from '../components/dashboard/RetirementSettingsModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
+import { getRetirementSettings } from '@/api/retirementSettings';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { convertCadence } from '@/utils/cadenceUtils';
@@ -53,8 +55,11 @@ export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('ytd');
   const [wizardOpen, setWizardOpen] = useState(false);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
+  const [retirementModalOpen, setRetirementModalOpen] = useState(false);
   const [userProfileData, setUserProfileData] = useState(null);
   const [isLoggedInAsChild, setIsLoggedInAsChild] = useState(false);
+  const [dateOfBirth, setDateOfBirth] = useState(null);
+  const [retirementSettings, setRetirementSettings] = useState(null);
 
   const { budgets: budgetData, spendingWithChildren } = useBudgetData();
 
@@ -162,6 +167,23 @@ export default function Dashboard() {
     window.addEventListener('profileSwitched', handleProfileSwitch);
     return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
   }, [queryClient]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const load = async () => {
+      try {
+        const { data: prof } = await firstsavvy
+          .from('user_settings')
+          .select('date_of_birth')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (prof?.date_of_birth) setDateOfBirth(prof.date_of_birth);
+        const rs = await getRetirementSettings(user.id);
+        if (rs) setRetirementSettings(rs);
+      } catch { /* non-fatal */ }
+    };
+    load();
+  }, [user?.id, retirementModalOpen]);
 
   // Calculate net worth (only active accounts)
   // Assets - Liabilities (liabilities stored as positive = amount owed)
@@ -503,6 +525,109 @@ export default function Dashboard() {
           income: 0,
         });
       });
+
+      // --- Forward projection ---
+      if (retirementSettings && dateOfBirth) {
+        const currentAge = Math.floor(
+          (today.getTime() - new Date(dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000)
+        );
+        const retirementAge = retirementSettings.retirement_age ?? 65;
+        const monthlyRate = (retirementSettings.assumed_growth_rate ?? 0.07) / 12;
+        const monthlySavings = retirementSettings.monthly_savings ?? 0;
+        const monthlySpend = (retirementSettings.monthly_retirement_spending ?? 0) *
+          ({ thrifty: 0.7, moderate: 1.0, spendy: 1.5 }[retirementSettings.spending_style ?? 'moderate'] ?? 1.0);
+        const endAge = 90;
+
+        // Emit one data point per 5-year age milestone
+        const ageMilestones = [];
+        for (let age = Math.ceil(currentAge / 5) * 5; age <= endAge; age += 5) {
+          if (age <= currentAge) continue;
+          ageMilestones.push(age);
+        }
+
+        // Also emit retirement age if it falls between milestones
+        if (!ageMilestones.includes(retirementAge) && retirementAge > currentAge && retirementAge <= endAge) {
+          ageMilestones.push(retirementAge);
+          ageMilestones.sort((a, b) => a - b);
+        }
+
+        let projectedNetWorth = netWorth;
+        let currentProjectionAge = currentAge;
+
+        // Add a "Today" bridge point (isProjection: false to connect the historical line)
+        data.push({
+          date: 'Today',
+          fullDate: today,
+          networth: netWorth,
+          projected: netWorth,
+          needed: null,
+          isToday: true,
+          isProjection: false,
+          balance: 0, spending: 0, income: 0,
+        });
+
+        // Compute "needed at retirement" for the needs line
+        const annualRate = retirementSettings.assumed_growth_rate ?? 0.07;
+        const retirementYears = endAge - retirementAge;
+        const neededAtRetirement = retirementYears > 0
+          ? monthlySpend * 12 * ((1 - Math.pow(1 + annualRate, -retirementYears)) / annualRate)
+          : monthlySpend * 12 * 25;
+
+        ageMilestones.forEach(age => {
+          const yearsFromNow = age - currentAge;
+          const months = yearsFromNow * 12;
+          const isRetired = age > retirementAge;
+          const yearsToRetirement = Math.max(0, retirementAge - currentAge);
+          const retirementMonths = yearsToRetirement * 12;
+
+          let haveVal;
+          if (age <= retirementAge) {
+            // Accumulation: FV of current NW + savings contributions
+            haveVal = monthlyRate > 0
+              ? netWorth * Math.pow(1 + monthlyRate, months) +
+                monthlySavings * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
+              : netWorth + monthlySavings * months;
+          } else {
+            // Drawdown from the value at retirement
+            const atRetirement = monthlyRate > 0
+              ? netWorth * Math.pow(1 + monthlyRate, retirementMonths) +
+                monthlySavings * ((Math.pow(1 + monthlyRate, retirementMonths) - 1) / monthlyRate)
+              : netWorth + monthlySavings * retirementMonths;
+            const monthsInRetirement = (age - retirementAge) * 12;
+            haveVal = monthlyRate > 0
+              ? atRetirement * Math.pow(1 + monthlyRate, monthsInRetirement) -
+                monthlySpend * ((Math.pow(1 + monthlyRate, monthsInRetirement) - 1) / monthlyRate)
+              : atRetirement - monthlySpend * monthsInRetirement;
+          }
+
+          // Needs line: straight line from 0 at today to neededAtRetirement at retirement, then declines
+          let needVal = null;
+          if (age <= retirementAge) {
+            needVal = yearsToRetirement > 0
+              ? neededAtRetirement * (yearsFromNow / yearsToRetirement)
+              : neededAtRetirement;
+          } else {
+            const monthsSinceRetirement = (age - retirementAge) * 12;
+            const remainingYears = Math.max(0, endAge - age);
+            needVal = monthlyRate > 0 && remainingYears > 0
+              ? monthlySpend * 12 * ((1 - Math.pow(1 + annualRate, -remainingYears)) / annualRate)
+              : monthlySpend * 12 * remainingYears;
+          }
+
+          const label = age === retirementAge ? `Retire ${age}` : `Age ${age}`;
+          data.push({
+            date: label,
+            fullDate: null,
+            networth: null,
+            projected: Math.max(0, haveVal),
+            needed: Math.max(0, needVal),
+            isProjection: true,
+            isRetirementAge: age === retirementAge,
+            ageLabel: age,
+            balance: 0, spending: 0, income: 0,
+          });
+        });
+      }
     }
 
     return data;
@@ -510,24 +635,36 @@ export default function Dashboard() {
 
   const chartData = generateChartData();
 
-  // X axis: one label per calendar month, positioned on the first data point of that month
+  const hasProjection = chartView === 'networth' && chartData.some(d => d.isProjection);
+
+  // X axis: month labels for historical, age labels for projection
   const chartXTicks = (() => {
     const seen = new Set();
     const ticks = [];
     chartData.forEach(d => {
+      if (d.isProjection) {
+        ticks.push({ date: d.date, label: d.date });
+        return;
+      }
       if (!d.fullDate) return;
       const key = `${d.fullDate.getFullYear()}-${d.fullDate.getMonth()}`;
       if (seen.has(key)) return;
       seen.add(key);
-      ticks.push({ date: d.date, label: format(d.fullDate, 'MMM') });
+      const label = d.isToday ? 'Today' : format(d.fullDate, 'MMM');
+      ticks.push({ date: d.date, label });
     });
     return ticks;
   })();
 
-  // Y axis: 5 clean round ticks spanning min→max
+  // Y axis: spans both historical and projected values
   const chartYTicks = (() => {
-    const dataKey = chartView === 'networth' ? 'networth' : chartView === 'spending' ? 'spending' : 'balance';
-    const values = chartData.map(d => d[dataKey]).filter(v => v != null && isFinite(v));
+    let values;
+    if (chartView === 'networth') {
+      values = chartData.flatMap(d => [d.networth, d.projected, d.needed]).filter(v => v != null && isFinite(v));
+    } else {
+      const dataKey = chartView === 'spending' ? 'spending' : 'balance';
+      values = chartData.map(d => d[dataKey]).filter(v => v != null && isFinite(v));
+    }
     if (values.length === 0) return [0];
     const rawMin = Math.min(...values);
     const rawMax = Math.max(...values);
@@ -535,7 +672,6 @@ export default function Dashboard() {
     const max = rawMax;
     if (max === min) return [0, max || 1];
     const range = max - min;
-    // Pick a step that gives 4-5 nice round ticks
     const roughStep = range / 4;
     const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
     const niceSteps = [1, 2, 2.5, 5, 10];
@@ -546,6 +682,17 @@ export default function Dashboard() {
       ticks.push(Math.round(v));
     }
     return ticks;
+  })();
+
+  // Average monthly savings for pre-filling retirement modal
+  const avgMonthlySavings = (() => {
+    if (transactions.length === 0) return 2000;
+    const recentMonths = 3;
+    const cutoff = format(subMonths(new Date(), recentMonths), 'yyyy-MM-dd');
+    const recent = transactions.filter(t => t.date >= cutoff);
+    const income = recent.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expenses = recent.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
+    return Math.max(0, Math.round((income - expenses) / recentMonths));
   })();
 
   const budgetUtilization = budgetData
@@ -658,10 +805,48 @@ export default function Dashboard() {
                     />
                   )}
                   <TimeRangeDropdown value={timeRange} onValueChange={setTimeRange} />
+                  {chartView === 'networth' && (
+                    <button
+                      onClick={() => setRetirementModalOpen(true)}
+                      title="Retirement projection settings"
+                      className={`h-8 w-8 flex items-center justify-center rounded-md border transition-colors ${
+                        retirementSettings
+                          ? 'border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                          : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </CardHeader>
             <CardContent className="px-3 pb-3 pt-1">
+              {hasProjection && (() => {
+                const retirementAge = retirementSettings?.retirement_age ?? 65;
+                const retirePoint = chartData.find(d => d.isRetirementAge);
+                const haveVal = retirePoint?.projected ?? 0;
+                const needVal = retirePoint?.needed ?? 0;
+                const onTrack = haveVal >= needVal;
+                const fmt = v => v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : `$${(v/1_000).toFixed(0)}K`;
+                return (
+                  <div className="flex items-center gap-6 px-1 pb-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                      <span className="text-slate-500">You'll have</span>
+                      <span className={`font-bold ${onTrack ? 'text-emerald-600' : 'text-slate-800'}`}>{fmt(haveVal)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0" />
+                      <span className="text-slate-500">You'll need</span>
+                      <span className={`font-bold ${!onTrack ? 'text-red-500' : 'text-slate-800'}`}>{fmt(needVal)}</span>
+                    </div>
+                    <span className={`text-xs ml-auto ${onTrack ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {onTrack ? `On track at age ${retirementAge}` : `Shortfall at age ${retirementAge}`}
+                    </span>
+                  </div>
+                );
+              })()}
               <ResponsiveContainer width="100%" height={180}>
                 {chartView === 'income' ? (
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: 30, bottom: 5 }} barGap={0} barCategoryGap="60%">
@@ -677,14 +862,18 @@ export default function Dashboard() {
                     <Bar dataKey="income" fill="hsl(var(--soft-green))" name="Money In" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 ) : (
-                  <AreaChart 
-                    data={chartData} 
+                  <AreaChart
+                    data={chartData}
                     margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                   >
                     <defs>
                       <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'} stopOpacity={0.3}/>
                         <stop offset="95%" stopColor={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'} stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="projectedGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -711,6 +900,19 @@ export default function Dashboard() {
                       axisLine={false}
                       tickLine={false}
                     />
+                    {hasProjection && (
+                      <ReferenceLine x="Today" stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={1.5}
+                        label={{ value: 'Today', position: 'insideTopLeft', fontSize: 10, fill: '#94a3b8' }}
+                      />
+                    )}
+                    {hasProjection && retirementSettings?.retirement_age && (() => {
+                      const label = `Retire ${retirementSettings.retirement_age}`;
+                      return (
+                        <ReferenceLine x={label} stroke="#10b981" strokeDasharray="4 3" strokeWidth={1.5}
+                          label={{ value: `Age ${retirementSettings.retirement_age}`, position: 'insideTopLeft', fontSize: 10, fill: '#10b981' }}
+                        />
+                      );
+                    })()}
                     <Tooltip
                       position={{ y: 0 }}
                       offset={20}
@@ -739,6 +941,26 @@ export default function Dashboard() {
                         }
 
                         if (chartView === 'networth') {
+                          if (data.isProjection) {
+                            const fmt = v => v != null ? `$${Math.round(v).toLocaleString()}` : '—';
+                            return (
+                              <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-lg text-sm">
+                                <div className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Projected · {data.date}</div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                  <span className="text-slate-500 text-xs">You'll have</span>
+                                  <span className="font-semibold text-emerald-600 ml-auto">{fmt(data.projected)}</span>
+                                </div>
+                                {data.needed != null && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-slate-400" />
+                                    <span className="text-slate-500 text-xs">You'll need</span>
+                                    <span className="font-semibold text-slate-700 ml-auto">{fmt(data.needed)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
                           const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d, yyyy') : data.date;
                           const nw = data.networth ?? 0;
                           return (
@@ -785,8 +1007,10 @@ export default function Dashboard() {
                       type="monotone"
                       dataKey={chartView === 'networth' ? 'networth' : chartView === 'spending' ? 'spending' : 'balance'}
                       stroke={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'}
+                      strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorValue)"
+                      connectNulls={false}
                       activeDot={(props) => {
                         const { cx, cy, payload } = props;
                         if (cx === undefined || cy === undefined) return null;
@@ -804,6 +1028,34 @@ export default function Dashboard() {
                         );
                       }}
                     />
+                    {hasProjection && (
+                      <Area
+                        type="monotone"
+                        dataKey="projected"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        strokeDasharray="6 3"
+                        fillOpacity={1}
+                        fill="url(#projectedGradient)"
+                        connectNulls={false}
+                        dot={false}
+                        activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                      />
+                    )}
+                    {hasProjection && (
+                      <Area
+                        type="monotone"
+                        dataKey="needed"
+                        stroke="#94a3b8"
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                        fill="none"
+                        fillOpacity={0}
+                        connectNulls={false}
+                        dot={false}
+                        activeDot={{ r: 4, fill: '#94a3b8', stroke: '#fff', strokeWidth: 2 }}
+                      />
+                    )}
                   </AreaChart>
                 )}
               </ResponsiveContainer>
@@ -923,6 +1175,14 @@ export default function Dashboard() {
         onClose={() => setProfileSetupOpen(false)}
         currentFullName={userProfileData?.full_name || ''}
         currentDisplayName={activeProfile?.display_name || 'Personal'}
+        />
+
+        <RetirementSettingsModal
+          open={retirementModalOpen}
+          onClose={() => setRetirementModalOpen(false)}
+          dateOfBirth={dateOfBirth}
+          currentNetWorth={netWorth}
+          avgMonthlySavings={avgMonthlySavings}
         />
         </div>
         );

@@ -27,6 +27,7 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [phone, setPhone] = useState('');
 
   const formatPhone = (value) => {
@@ -65,7 +66,7 @@ export default function Login() {
         await firstsavvy.auth.signIn(email, password);
         navigate('/Dashboard');
       } else {
-        const result = await firstsavvy.auth.signUp(email, password, { firstName, lastName, phone });
+        const result = await firstsavvy.auth.signUp(email, password, { firstName, lastName, phone, dateOfBirth });
         if (result?.session) {
           setNewUserId(result.session.user.id);
           setNewUserDisplayName([firstName, lastName].filter(Boolean).join(' ') || email);
@@ -360,6 +361,19 @@ export default function Login() {
                       disabled={loading}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="dateOfBirth">Date of Birth <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    required
+                    disabled={loading}
+                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                  />
                 </div>
 
                 <div className="space-y-2">

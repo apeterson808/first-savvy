@@ -19,6 +19,7 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
   const [lastName, setLastName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [displayNameTouched, setDisplayNameTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -56,6 +57,7 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
     if (!lastName.trim()) e.lastName = 'Last name is required';
     if (!displayName.trim()) e.displayName = 'Display name is required';
     if (!phone.trim()) e.phone = 'Phone number is required';
+    if (!dateOfBirth) e.dateOfBirth = 'Date of birth is required';
     return e;
   };
 
@@ -79,6 +81,7 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
           full_name: fullName,
           display_name: displayName.trim(),
           phone: phone.trim(),
+          ...(dateOfBirth ? { date_of_birth: dateOfBirth } : {}),
         }, { onConflict: 'id' });
 
       const { data: membership } = await firstsavvy
@@ -224,6 +227,29 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
                   <p className="text-xs text-red-500">{errors.displayName}</p>
                 ) : (
                   <p className="text-xs text-slate-500">This name appears in your profile tabs</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="dateOfBirth">
+                  Date of Birth <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => {
+                    setDateOfBirth(e.target.value);
+                    if (errors.dateOfBirth) setErrors(prev => ({ ...prev, dateOfBirth: undefined }));
+                  }}
+                  disabled={saving}
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                  className={errors.dateOfBirth ? 'border-red-400 focus-visible:ring-red-400' : ''}
+                />
+                {errors.dateOfBirth ? (
+                  <p className="text-xs text-red-500">{errors.dateOfBirth}</p>
+                ) : (
+                  <p className="text-xs text-slate-500">Used to personalize your financial projections</p>
                 )}
               </div>
 

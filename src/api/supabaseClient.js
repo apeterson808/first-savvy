@@ -307,7 +307,7 @@ export const createSupabaseClient = () => {
       TransactionRule: createEntityAPI('transaction_rules')
     },
     auth: {
-      async signUp(email, password, { firstName, lastName, phone } = {}) {
+      async signUp(email, password, { firstName, lastName, phone, dateOfBirth } = {}) {
         const signUpParams = { email, password };
 
         const meta = {};
@@ -317,6 +317,7 @@ export const createSupabaseClient = () => {
           meta.last_name = lastName || '';
         }
         if (phone) meta.phone = phone;
+        if (dateOfBirth) meta.date_of_birth = dateOfBirth;
 
         if (Object.keys(meta).length > 0) {
           signUpParams.options = { data: meta };
@@ -324,6 +325,15 @@ export const createSupabaseClient = () => {
 
         const { data, error } = await supabase.auth.signUp(signUpParams);
         if (error) throw error;
+
+        // If the session is immediately available, persist date_of_birth to user_settings
+        if (data?.session?.user?.id && dateOfBirth) {
+          await supabase.from('user_settings').upsert({
+            id: data.session.user.id,
+            date_of_birth: dateOfBirth,
+          }, { onConflict: 'id' });
+        }
+
         return data;
       },
       async signIn(emailOrUsername, password) {
