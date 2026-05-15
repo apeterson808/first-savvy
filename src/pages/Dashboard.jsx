@@ -836,7 +836,15 @@ export default function Dashboard() {
                     })
                     .map(d => d.date);
                 })();
-                const projTicks = projData.map(d => d.date);
+                // Only show every 10-year milestone + retirement age to avoid crowding
+                const projTicks = projData
+                  .filter(d => !d.isToday && (d.isRetirementAge || (d.ageLabel && d.ageLabel % 10 === 0)))
+                  .map(d => d.date);
+                const projTickFormatter = (val) => {
+                  if (val.startsWith('Retire ')) return `Retire\n${val.split(' ')[1]}`;
+                  if (val.startsWith('Age ')) return val.split(' ')[1];
+                  return val;
+                };
 
                 const tooltipContent = ({ active, payload }) => {
                   if (!active || !payload?.length) return null;
@@ -972,8 +980,9 @@ export default function Dashboard() {
                               tick={{ fontSize: 11 }}
                               axisLine={false}
                               tickLine={false}
-                              ticks={projTicks.filter(t => t !== 'Today')}
+                              ticks={projTicks}
                               interval={0}
+                              tickFormatter={projTickFormatter}
                             />
                             <YAxis
                               stroke="#64748b"
