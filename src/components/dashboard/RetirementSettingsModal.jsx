@@ -55,13 +55,13 @@ export default function RetirementSettingsModal({ open, onClose, dateOfBirth, cu
 
   const currentAge = dateOfBirth
     ? Math.floor((Date.now() - new Date(dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000))
-    : null;
+    : 35;
 
   const styleMultiplier = SPENDING_STYLES.find(s => s.key === spendingStyle)?.multiplier ?? 1;
   const monthlyRetirementSpend = baseMonthlySpending * styleMultiplier;
 
   // Project future net worth at retirement
-  const yearsToRetirement = currentAge != null ? Math.max(0, retirementAge - currentAge) : 30;
+  const yearsToRetirement = Math.max(0, retirementAge - currentAge);
   const monthlyRate = growthRate / 100 / 12;
   const months = yearsToRetirement * 12;
   const projectedAtRetirement = months > 0
@@ -110,25 +110,20 @@ export default function RetirementSettingsModal({ open, onClose, dateOfBirth, cu
           </DialogTitle>
         </DialogHeader>
 
-        {noDob ? (
-          <div className="py-6 text-center space-y-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-50 mx-auto">
-              <AlertCircle className="w-6 h-6 text-amber-500" />
-            </div>
-            <div>
-              <p className="font-semibold text-slate-800">Date of birth required</p>
-              <p className="text-sm text-slate-500 mt-1">
-                Add your date of birth in Profile Settings to enable retirement projections.
-              </p>
-            </div>
-            <Button onClick={() => { onClose(); navigate('/Settings'); }}>Go to Profile Settings</Button>
-          </div>
-        ) : loading ? (
+        {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
           </div>
         ) : (
           <div className="space-y-6 pt-2">
+            {noDob && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  For more accurate projections, <button onClick={() => { onClose(); navigate('/Settings'); }} className="underline font-medium">add your date of birth</button> in Profile Settings. Using age 35 as a default.
+                </span>
+              </div>
+            )}
             {/* Summary */}
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
               <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">

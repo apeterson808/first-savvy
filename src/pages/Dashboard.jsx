@@ -527,10 +527,10 @@ export default function Dashboard() {
       });
 
       // --- Forward projection ---
-      if (retirementSettings && dateOfBirth) {
-        const currentAge = Math.floor(
-          (today.getTime() - new Date(dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000)
-        );
+      if (retirementSettings) {
+        const currentAge = dateOfBirth
+          ? Math.floor((today.getTime() - new Date(dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000))
+          : 35;
         const retirementAge = retirementSettings.retirement_age ?? 65;
         const monthlyRate = (retirementSettings.assumed_growth_rate ?? 0.07) / 12;
         const monthlySavings = retirementSettings.monthly_savings ?? 0;
@@ -637,34 +637,25 @@ export default function Dashboard() {
 
   const hasProjection = chartView === 'networth' && chartData.some(d => d.isProjection);
 
-  // X axis: month labels for historical, age labels for projection
+  // X axis ticks
   const chartXTicks = (() => {
     const seen = new Set();
     const ticks = [];
     chartData.forEach(d => {
-      if (d.isProjection) {
-        ticks.push({ date: d.date, label: d.date });
+      if (d.isProjection || d.isToday) {
+        ticks.push({ date: d.date, label: d.isToday ? 'Today' : d.date });
         return;
       }
       if (!d.fullDate) return;
       const key = `${d.fullDate.getFullYear()}-${d.fullDate.getMonth()}`;
       if (seen.has(key)) return;
       seen.add(key);
-      const label = d.isToday ? 'Today' : format(d.fullDate, 'MMM');
-      ticks.push({ date: d.date, label });
+      ticks.push({ date: d.date, label: format(d.fullDate, 'MMM') });
     });
     return ticks;
   })();
 
-  // Y axis: spans both historical and projected values
-  const chartYTicks = (() => {
-    let values;
-    if (chartView === 'networth') {
-      values = chartData.flatMap(d => [d.networth, d.projected, d.needed]).filter(v => v != null && isFinite(v));
-    } else {
-      const dataKey = chartView === 'spending' ? 'spending' : 'balance';
-      values = chartData.map(d => d[dataKey]).filter(v => v != null && isFinite(v));
-    }
+  const makeYTicks = (values) => {
     if (values.length === 0) return [0];
     const rawMin = Math.min(...values);
     const rawMax = Math.max(...values);
@@ -682,6 +673,18 @@ export default function Dashboard() {
       ticks.push(Math.round(v));
     }
     return ticks;
+  };
+
+  // Y axis: when projection is visible, use the full range (historical + projected)
+  const chartYTicks = (() => {
+    let values;
+    if (chartView === 'networth') {
+      values = chartData.flatMap(d => [d.networth, d.projected, d.needed]).filter(v => v != null && isFinite(v));
+    } else {
+      const dataKey = chartView === 'spending' ? 'spending' : 'balance';
+      values = chartData.map(d => d[dataKey]).filter(v => v != null && isFinite(v));
+    }
+    return makeYTicks(values);
   })();
 
   // Average monthly savings for pre-filling retirement modal
@@ -884,6 +887,7 @@ export default function Dashboard() {
                       axisLine={false}
                       tickLine={false}
                       ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartXTicks.map(t => t.date) : undefined}
+                      interval={hasProjection ? 0 : 'preserveStartEnd'}
                       tickFormatter={(val) => {
                         const found = chartXTicks.find(t => t.date === val);
                         return found ? found.label : val;
@@ -1037,7 +1041,7 @@ export default function Dashboard() {
                         strokeDasharray="6 3"
                         fillOpacity={1}
                         fill="url(#projectedGradient)"
-                        connectNulls={false}
+                        connectNulls={true}
                         dot={false}
                         activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
                       />
@@ -1051,7 +1055,7 @@ export default function Dashboard() {
                         strokeDasharray="4 4"
                         fill="none"
                         fillOpacity={0}
-                        connectNulls={false}
+                        connectNulls={true}
                         dot={false}
                         activeDot={{ r: 4, fill: '#94a3b8', stroke: '#fff', strokeWidth: 2 }}
                       />
