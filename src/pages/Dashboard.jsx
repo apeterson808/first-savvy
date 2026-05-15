@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Customized } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AccountDropdown from '../components/common/AccountDropdown';
@@ -808,19 +808,6 @@ export default function Dashboard() {
                     />
                   )}
                   <TimeRangeDropdown value={timeRange} onValueChange={setTimeRange} />
-                  {chartView === 'networth' && (
-                    <button
-                      onClick={() => setRetirementModalOpen(true)}
-                      title="Retirement projection settings"
-                      className={`h-8 w-8 flex items-center justify-center rounded-md border transition-colors ${
-                        retirementSettings
-                          ? 'border-emerald-300 bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                          : 'border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600'
-                      }`}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
               </div>
             </CardHeader>
@@ -831,26 +818,26 @@ export default function Dashboard() {
                 const haveVal = retirePoint?.projected ?? 0;
                 const needVal = retirePoint?.needed ?? 0;
                 const onTrack = haveVal >= needVal;
-                const fmt = v => v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : `$${(v/1_000).toFixed(0)}K`;
+                const fmt = v => v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v/1_000).toFixed(0)}K` : `$${Math.round(v)}`;
                 return (
-                  <div className="flex items-center gap-6 px-1 pb-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="text-slate-500">You'll have</span>
-                      <span className={`font-bold ${onTrack ? 'text-emerald-600' : 'text-slate-800'}`}>{fmt(haveVal)}</span>
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#10b981" strokeWidth="2.5" strokeDasharray="8 4"/></svg>
+                      <span className="text-xs text-slate-500">You'll have</span>
+                      <span className={`text-xs font-bold ${onTrack ? 'text-emerald-600' : 'text-slate-700'}`}>{fmt(haveVal)} at {retirementAge}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0" />
-                      <span className="text-slate-500">You'll need</span>
-                      <span className={`font-bold ${!onTrack ? 'text-red-500' : 'text-slate-800'}`}>{fmt(needVal)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4"/></svg>
+                      <span className="text-xs text-slate-500">You'll need</span>
+                      <span className={`text-xs font-bold ${!onTrack ? 'text-red-500' : 'text-slate-700'}`}>{fmt(needVal)}</span>
                     </div>
-                    <span className={`text-xs ml-auto ${onTrack ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {onTrack ? `On track at age ${retirementAge}` : `Shortfall at age ${retirementAge}`}
+                    <span className={`text-[11px] ml-auto px-2 py-0.5 rounded-full font-medium ${onTrack ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                      {onTrack ? 'On track' : 'Shortfall'}
                     </span>
                   </div>
                 );
               })()}
-              <ResponsiveContainer width="100%" height={180}>
+              <ResponsiveContainer width="100%" height={270}>
                 {chartView === 'income' ? (
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: 30, bottom: 5 }} barGap={0} barCategoryGap="60%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -905,18 +892,60 @@ export default function Dashboard() {
                       tickLine={false}
                     />
                     {hasProjection && (
-                      <ReferenceLine x="Today" stroke="#94a3b8" strokeDasharray="4 3" strokeWidth={1.5}
-                        label={{ value: 'Today', position: 'insideTopLeft', fontSize: 10, fill: '#94a3b8' }}
-                      />
+                      <ReferenceLine x="Today" stroke="#cbd5e1" strokeDasharray="4 3" strokeWidth={1} />
                     )}
                     {hasProjection && retirementSettings?.retirement_age && (() => {
                       const label = `Retire ${retirementSettings.retirement_age}`;
                       return (
                         <ReferenceLine x={label} stroke="#10b981" strokeDasharray="4 3" strokeWidth={1.5}
-                          label={{ value: `Age ${retirementSettings.retirement_age}`, position: 'insideTopLeft', fontSize: 10, fill: '#10b981' }}
+                          label={{ value: `Retire`, position: 'insideTopLeft', fontSize: 10, fill: '#10b981' }}
                         />
                       );
                     })()}
+                    {chartView === 'networth' && (
+                      <Customized component={({ xAxisMap }) => {
+                        const xAxis = xAxisMap && Object.values(xAxisMap)[0];
+                        if (!xAxis?.scale) return null;
+                        const bw = xAxis.scale.bandwidth ? xAxis.scale.bandwidth() / 2 : 0;
+
+                        // For projection mode: place icon at Today divider
+                        // For no-projection mode: place at far right end of chart
+                        let xPos;
+                        if (hasProjection) {
+                          const todayPoint = chartData.find(d => d.isToday);
+                          if (!todayPoint) return null;
+                          xPos = xAxis.scale(todayPoint.date);
+                        } else {
+                          const lastPoint = chartData[chartData.length - 1];
+                          if (!lastPoint) return null;
+                          xPos = xAxis.scale(lastPoint.date);
+                        }
+                        if (xPos == null) return null;
+                        xPos = xPos + bw;
+
+                        const active = !!retirementSettings;
+                        const color = active ? '#10b981' : '#94a3b8';
+                        const borderColor = active ? '#10b981' : '#cbd5e1';
+                        const bg = active ? '#f0fdf4' : '#f8fafc';
+
+                        return (
+                          <g
+                            transform={`translate(${hasProjection ? xPos : xPos - 18}, 16)`}
+                            onClick={() => setRetirementModalOpen(true)}
+                            style={{ cursor: 'pointer' }}
+                            role="button"
+                            aria-label="Retirement projection settings"
+                          >
+                            <circle r={15} fill={bg} stroke={borderColor} strokeWidth={1.5} />
+                            {/* Lucide Sparkles icon paths scaled to 18x18 centered */}
+                            <g transform="translate(-9,-9)" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                              <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z" strokeWidth="1.5"/>
+                              <path d="M20 3v4M22 5h-4M4 17v2M5 18H3" strokeWidth="1.5"/>
+                            </g>
+                          </g>
+                        );
+                      }} />
+                    )}
                     <Tooltip
                       position={{ y: 0 }}
                       offset={20}
@@ -1037,13 +1066,14 @@ export default function Dashboard() {
                         type="monotone"
                         dataKey="projected"
                         stroke="#10b981"
-                        strokeWidth={2}
-                        strokeDasharray="6 3"
+                        strokeWidth={2.5}
+                        strokeDasharray="8 4"
                         fillOpacity={1}
                         fill="url(#projectedGradient)"
-                        connectNulls={true}
+                        connectNulls={false}
                         dot={false}
                         activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                        legendType="none"
                       />
                     )}
                     {hasProjection && (
@@ -1051,13 +1081,14 @@ export default function Dashboard() {
                         type="monotone"
                         dataKey="needed"
                         stroke="#94a3b8"
-                        strokeWidth={2}
-                        strokeDasharray="4 4"
+                        strokeWidth={1.5}
+                        strokeDasharray="5 4"
                         fill="none"
                         fillOpacity={0}
-                        connectNulls={true}
+                        connectNulls={false}
                         dot={false}
                         activeDot={{ r: 4, fill: '#94a3b8', stroke: '#fff', strokeWidth: 2 }}
+                        legendType="none"
                       />
                     )}
                   </AreaChart>
