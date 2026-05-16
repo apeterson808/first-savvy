@@ -973,6 +973,7 @@ export default function Dashboard() {
                               tickFormatter={() => ''}
                               axisLine={false}
                               tickLine={false}
+                              allowDataOverflow={true}
                             />
                             <Tooltip
                               position={{ y: 0 }}
@@ -1031,6 +1032,7 @@ export default function Dashboard() {
                               axisLine={false}
                               tickLine={false}
                               orientation="right"
+                              allowDataOverflow={true}
                             />
                             <Customized component={({ xAxisMap, yAxisMap, offset: chartOffset }) => {
                               const xAxis = xAxisMap && Object.values(xAxisMap)[0];
