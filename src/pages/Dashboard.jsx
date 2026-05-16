@@ -797,18 +797,64 @@ export default function Dashboard() {
                   <TimeRangeDropdown value={timeRange} onValueChange={setTimeRange} />
                 </div>
               </div>
-              {chartView === 'income' && (
-                <div className="flex items-center gap-3 text-xs px-1 pb-1">
+              {/* Fixed-height legend row — always rendered to prevent height shifts */}
+              <div className="flex items-center gap-4 text-xs px-1 pb-1 h-5">
+                {chartView === 'income' && (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded bg-soft-green"></div>
+                      <span className="text-slate-500">Money In</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded bg-orange"></div>
+                      <span className="text-slate-500">Money Out</span>
+                    </div>
+                  </>
+                )}
+                {chartView === 'spending' && (
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-soft-green"></div>
-                    <span className="text-slate-500">In</span>
+                    <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="hsl(var(--sky-blue))" strokeWidth="2.5"/></svg>
+                    <span className="text-slate-500">Cumulative spending</span>
                   </div>
+                )}
+                {chartView === 'balance' && (
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-orange"></div>
-                    <span className="text-slate-500">Out</span>
+                    <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="hsl(var(--sky-blue))" strokeWidth="2.5"/></svg>
+                    <span className="text-slate-500">Cash balance</span>
                   </div>
-                </div>
-              )}
+                )}
+                {chartView === 'networth' && !hasProjection && (
+                  <div className="flex items-center gap-1.5">
+                    <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#10b981" strokeWidth="2.5"/></svg>
+                    <span className="text-slate-500">Net worth</span>
+                  </div>
+                )}
+                {chartView === 'networth' && hasProjection && (() => {
+                  const retAge = retirementSettings?.retirement_age ?? 65;
+                  const retirePoint = chartData.find(d => d.isRetirementAge);
+                  const haveVal = retirePoint?.projected ?? 0;
+                  const needVal = retirePoint?.needed ?? 0;
+                  const onTrack = haveVal >= needVal;
+                  const fmtV = v => v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v/1_000).toFixed(0)}K` : `$${Math.round(v)}`;
+                  return (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#10b981" strokeWidth="2.5" strokeDasharray="8 4"/></svg>
+                        <span className="text-slate-500">You'll have</span>
+                        <span className={`font-bold ${onTrack ? 'text-emerald-600' : 'text-slate-700'}`}>{fmtV(haveVal)} at {retAge}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4"/></svg>
+                        <span className="text-slate-500">You'll need</span>
+                        <span className={`font-bold ${!onTrack ? 'text-red-500' : 'text-slate-700'}`}>{fmtV(needVal)}</span>
+                      </div>
+                      <span className={`text-[11px] ml-auto px-2 py-0.5 rounded-full font-medium ${onTrack ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                        {onTrack ? 'On track' : 'Shortfall'}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
             </CardHeader>
             <CardContent className="px-3 pb-3 pt-1">
               {hasProjection ? (() => {
@@ -882,22 +928,6 @@ export default function Dashboard() {
 
                 return (
                   <div>
-                    {/* Legend */}
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1 pb-2">
-                      <div className="flex items-center gap-1.5">
-                        <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#10b981" strokeWidth="2.5" strokeDasharray="8 4"/></svg>
-                        <span className="text-xs text-slate-500">You'll have</span>
-                        <span className={`text-xs font-bold ${onTrack ? 'text-emerald-600' : 'text-slate-700'}`}>{fmtV(haveVal)} at {retAge}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="5 4"/></svg>
-                        <span className="text-xs text-slate-500">You'll need</span>
-                        <span className={`text-xs font-bold ${!onTrack ? 'text-red-500' : 'text-slate-700'}`}>{fmtV(needVal)}</span>
-                      </div>
-                      <span className={`text-[11px] ml-auto px-2 py-0.5 rounded-full font-medium ${onTrack ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                        {onTrack ? 'On track' : 'Shortfall'}
-                      </span>
-                    </div>
                     {/* Dual chart */}
                     <div className="flex" style={{ height: 270 }}>
                       {/* History panel */}
