@@ -866,7 +866,13 @@ export default function Dashboard() {
                 const needVal = retirePoint?.needed ?? 0;
                 const onTrack = haveVal >= needVal;
                 const fmtV = v => v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v/1_000).toFixed(0)}K` : `$${Math.round(v)}`;
-                const yFmt = v => v >= 1000 || v <= -1000 ? `$${(v/1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : `$${v}`;
+                const yFmt = v => {
+                  const abs = Math.abs(v);
+                  const sign = v < 0 ? '-' : '';
+                  if (abs >= 1_000_000) return `${sign}$${(abs/1_000_000).toFixed(abs % 1_000_000 === 0 ? 0 : 1)}M`;
+                  if (abs >= 1_000) return `${sign}$${(abs/1_000).toFixed(abs % 1_000 === 0 ? 0 : 1)}k`;
+                  return `${sign}$${abs}`;
+                };
                 const yDomain = [chartYTicks[0], chartYTicks[chartYTicks.length - 1]];
                 const histTicks = (() => {
                   const seen = new Set();
