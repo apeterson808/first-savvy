@@ -901,7 +901,13 @@ export default function Dashboard() {
                   const d = payload[0]?.payload;
                   if (!d) return null;
                   if (d.isProjection) {
-                    const fmt = v => v != null ? `$${Math.round(v).toLocaleString()}` : '—';
+                    const fmt = v => {
+                      if (v == null) return '—';
+                      const abs = Math.abs(v);
+                      if (abs >= 1_000_000) return `$${(abs/1_000_000).toFixed(abs % 1_000_000 === 0 ? 0 : 1)}M`;
+                      if (abs >= 1_000) return `$${(abs/1_000).toFixed(abs % 1_000 === 0 ? 0 : 0)}K`;
+                      return `$${Math.round(abs)}`;
+                    };
                     return (
                       <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-lg text-sm">
                         <div className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">Projected · {d.date}</div>
@@ -939,7 +945,7 @@ export default function Dashboard() {
                       {/* History panel */}
                       <div style={{ flex: '0 0 55%' }}>
                         <ResponsiveContainer width="100%" height={270}>
-                          <AreaChart data={histData} margin={{ top: 10, right: 0, left: 0, bottom: 30 }}>
+                          <AreaChart syncId="nwChart" data={histData} margin={{ top: 10, right: 0, left: 0, bottom: 30 }}>
                             <defs>
                               <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -998,7 +1004,7 @@ export default function Dashboard() {
                       {/* Projection panel */}
                       <div style={{ flex: '0 0 45%' }} className="relative">
                         <ResponsiveContainer width="100%" height={270}>
-                          <AreaChart data={projData} margin={{ top: 10, right: 4, left: 0, bottom: 30 }}>
+                          <AreaChart syncId="nwChart" data={projData} margin={{ top: 10, right: 4, left: 0, bottom: 30 }}>
                             <defs>
                               <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
