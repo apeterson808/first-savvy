@@ -955,12 +955,10 @@ export default function Dashboard() {
                               }}
                             />
                             <YAxis
-                              stroke="#64748b"
-                              tick={{ fontSize: 11 }}
-                              width={50}
+                              width={0}
                               ticks={chartYTicks}
                               domain={yDomain}
-                              tickFormatter={yFmt}
+                              tickFormatter={() => ''}
                               axisLine={false}
                               tickLine={false}
                             />
@@ -994,7 +992,7 @@ export default function Dashboard() {
                       {/* Projection panel */}
                       <div style={{ flex: '0 0 45%' }} className="relative">
                         <ResponsiveContainer width="100%" height={270}>
-                          <AreaChart data={projData} margin={{ top: 10, right: 10, left: 0, bottom: 30 }}>
+                          <AreaChart data={projData} margin={{ top: 10, right: 4, left: 0, bottom: 30 }}>
                             <defs>
                               <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.15}/>
@@ -1013,12 +1011,11 @@ export default function Dashboard() {
                               tickFormatter={projTickFormatter}
                             />
                             <YAxis
-                              stroke="#64748b"
-                              tick={{ fontSize: 11 }}
-                              width={0}
+                              tick={{ fontSize: 10, fill: '#94a3b8' }}
+                              width={38}
                               ticks={chartYTicks}
                               domain={yDomain}
-                              tickFormatter={() => ''}
+                              tickFormatter={yFmt}
                               axisLine={false}
                               tickLine={false}
                               orientation="right"
