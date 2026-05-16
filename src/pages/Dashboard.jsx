@@ -777,40 +777,38 @@ export default function Dashboard() {
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-1 pt-3 px-3">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                <div className="flex items-center gap-4">
-                  <Tabs value={chartView} onValueChange={setChartView}>
-                    <TabsList className="h-8">
-                      <TabsTrigger value="networth" className="text-xs px-3">Net Worth</TabsTrigger>
-                      <TabsTrigger value="spending" className="text-xs px-3">Spending</TabsTrigger>
-                      <TabsTrigger value="income" className="text-xs px-3">Money In/Out</TabsTrigger>
-                      <TabsTrigger value="balance" className="text-xs px-3">Cash Balance</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                  {chartView === 'income' && (
-                    <div className="flex items-center gap-3 text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded bg-soft-green"></div>
-                        <span className="text-slate-600">In</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded bg-orange"></div>
-                        <span className="text-slate-600">Out</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <Tabs value={chartView} onValueChange={setChartView}>
+                  <TabsList className="h-8">
+                    <TabsTrigger value="networth" className="text-xs px-3">Net Worth</TabsTrigger>
+                    <TabsTrigger value="spending" className="text-xs px-3">Spending</TabsTrigger>
+                    <TabsTrigger value="income" className="text-xs px-3">Money In/Out</TabsTrigger>
+                    <TabsTrigger value="balance" className="text-xs px-3">Cash Balance</TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
                 <div className="flex items-center gap-2">
-                  {chartView !== 'networth' && (
+                  <div style={{ width: '11rem' }} className={chartView !== 'networth' ? '' : 'invisible pointer-events-none'}>
                     <AccountDropdown
                       value={selectedAccount}
                       onValueChange={setSelectedAccount}
                       triggerClassName="w-44 h-8 text-xs hover:bg-slate-50"
                     />
-                  )}
+                  </div>
                   <TimeRangeDropdown value={timeRange} onValueChange={setTimeRange} />
                 </div>
               </div>
+              {chartView === 'income' && (
+                <div className="flex items-center gap-3 text-xs px-1 pb-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-soft-green"></div>
+                    <span className="text-slate-500">In</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-orange"></div>
+                    <span className="text-slate-500">Out</span>
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="px-3 pb-3 pt-1">
               {hasProjection ? (() => {
