@@ -1035,7 +1035,7 @@ export default function Dashboard() {
                             <Customized component={({ xAxisMap, yAxisMap, offset: chartOffset }) => {
                               const xAxis = xAxisMap && Object.values(xAxisMap)[0];
                               const yAxis = yAxisMap && Object.values(yAxisMap)[0];
-                              if (!xAxis?.scale) return null;
+                              if (!xAxis?.scale || !yAxis?.scale) return null;
                               const bw = xAxis.scale.bandwidth ? xAxis.scale.bandwidth() / 2 : 0;
                               const retLabel = `Retire ${retAge}`;
                               const xPos = xAxis.scale(retLabel);
@@ -1045,11 +1045,12 @@ export default function Dashboard() {
                               const btnCy = plotTop - 6;
                               const btnR = 14;
                               const lineTop = btnCy + btnR + 2;
-                              const lineBottom = lineTop + 18;
+                              const graphY = haveVal != null ? yAxis.scale(haveVal) : lineTop + 18;
+                              const lineBottom = graphY;
                               const color = '#10b981';
                               return (
                                 <g>
-                                  {/* short tick line below button */}
+                                  {/* line from button down to graph */}
                                   <line
                                     x1={cx} y1={lineTop}
                                     x2={cx} y2={lineBottom}
@@ -1057,6 +1058,8 @@ export default function Dashboard() {
                                     strokeWidth={1.5}
                                     strokeLinecap="round"
                                   />
+                                  {/* dot on graph line */}
+                                  <circle cx={cx} cy={lineBottom} r={4} fill={color} stroke="white" strokeWidth={2} />
                                   {/* sparkle button */}
                                   <g
                                     transform={`translate(${cx}, ${btnCy})`}
