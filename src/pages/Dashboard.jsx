@@ -1043,7 +1043,7 @@ export default function Dashboard() {
                               const cx = xPos + bw;
                               const btnR = 14;
                               const graphY = haveVal != null ? yAxis.scale(haveVal) : 50;
-                              const btnCy = graphY - btnR - 10;
+                              const btnCy = graphY - btnR - 28;
                               const lineTop = btnCy + btnR + 2;
                               const lineBottom = graphY;
                               const color = '#10b981';
