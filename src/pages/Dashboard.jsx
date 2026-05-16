@@ -1032,36 +1032,44 @@ export default function Dashboard() {
                               tickLine={false}
                               orientation="right"
                             />
-                            <ReferenceLine
-                              x={`Retire ${retAge}`}
-                              stroke="#10b981"
-                              strokeDasharray="4 3"
-                              strokeWidth={1.5}
-                            />
-                            <Customized component={({ xAxisMap }) => {
+                            <Customized component={({ xAxisMap, yAxisMap, offset: chartOffset }) => {
                               const xAxis = xAxisMap && Object.values(xAxisMap)[0];
+                              const yAxis = yAxisMap && Object.values(yAxisMap)[0];
                               if (!xAxis?.scale) return null;
                               const bw = xAxis.scale.bandwidth ? xAxis.scale.bandwidth() / 2 : 0;
                               const retLabel = `Retire ${retAge}`;
                               const xPos = xAxis.scale(retLabel);
                               if (xPos == null) return null;
                               const cx = xPos + bw;
-                              const active = !!retirementSettings;
-                              const color = active ? '#10b981' : '#94a3b8';
-                              const borderColor = active ? '#10b981' : '#cbd5e1';
-                              const bg = active ? '#f0fdf4' : '#f8fafc';
+                              const plotTop = chartOffset?.top ?? 10;
+                              const btnCy = plotTop - 6;
+                              const btnR = 14;
+                              const lineTop = btnCy + btnR + 2;
+                              const lineBottom = lineTop + 18;
+                              const color = '#10b981';
                               return (
-                                <g
-                                  transform={`translate(${cx}, 18)`}
-                                  onClick={() => setRetirementModalOpen(true)}
-                                  style={{ cursor: 'pointer' }}
-                                  role="button"
-                                  aria-label="Retirement projection settings"
-                                >
-                                  <circle r={15} fill={bg} stroke={borderColor} strokeWidth={1.5} />
-                                  <g transform="translate(-9,-9)" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none">
-                                    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/>
-                                    <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+                                <g>
+                                  {/* short tick line below button */}
+                                  <line
+                                    x1={cx} y1={lineTop}
+                                    x2={cx} y2={lineBottom}
+                                    stroke={color}
+                                    strokeWidth={1.5}
+                                    strokeLinecap="round"
+                                  />
+                                  {/* sparkle button */}
+                                  <g
+                                    transform={`translate(${cx}, ${btnCy})`}
+                                    onClick={() => setRetirementModalOpen(true)}
+                                    style={{ cursor: 'pointer' }}
+                                    role="button"
+                                    aria-label="Retirement projection settings"
+                                  >
+                                    <circle r={btnR} fill="white" stroke={color} strokeWidth={1.5} />
+                                    <g transform="translate(-8,-8)" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                                      <path d="M8.5 13.5A1.75 1.75 0 0 0 7.25 12.25l-5.368-1.384a.44.44 0 0 1 0-.85L7.25 8.637A1.75 1.75 0 0 0 8.5 7.387l1.384-5.368a.44.44 0 0 1 .85 0l1.384 5.368A1.75 1.75 0 0 0 13.368 8.637l5.368 1.384a.44.44 0 0 1 0 .85l-5.368 1.383a1.75 1.75 0 0 0-1.25 1.25l-1.384 5.369a.44.44 0 0 1-.85 0z"/>
+                                      <path d="M17 2.5v3M18.5 4h-3M3 14.5v1.5M3.75 15.25h-1.5"/>
+                                    </g>
                                   </g>
                                 </g>
                               );
