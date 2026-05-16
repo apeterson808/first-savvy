@@ -1041,11 +1041,10 @@ export default function Dashboard() {
                               const xPos = xAxis.scale(retLabel);
                               if (xPos == null) return null;
                               const cx = xPos + bw;
-                              const plotTop = chartOffset?.top ?? 10;
-                              const btnCy = plotTop - 6;
                               const btnR = 14;
+                              const graphY = haveVal != null ? yAxis.scale(haveVal) : 50;
+                              const btnCy = graphY - btnR - 10;
                               const lineTop = btnCy + btnR + 2;
-                              const graphY = haveVal != null ? yAxis.scale(haveVal) : lineTop + 18;
                               const lineBottom = graphY;
                               const color = '#10b981';
                               return (
